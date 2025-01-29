@@ -119,7 +119,7 @@ public class ClientPrediction : NetworkBehaviour
             //Debug.Log("IsClient + IsOwner" + m_rigidBody.name);
             //Debug.Log("Running the script for: "+ NetworkManager.Singleton.LocalClientId);
             //float totalMousePerFrame = 0;
-            //GetCurrentMouseInput();
+            GetCurrentMouseInput();
             timer += Time.deltaTime;
             //skippedFrame = true;
             while(timer>=minTimeBetweenTicks){
@@ -133,7 +133,7 @@ public class ClientPrediction : NetworkBehaviour
                 //Debug.Log(inputPacketCache[cacheIndex].jump);
                 
                 //Debug.Log("Simulating Movement: "+ clientTick);
-                //moveCamera(inputPacketCache[cacheIndex]);
+                moveCamera(inputPacketCache[cacheIndex]);
                 simulateMovementTick(inputPacketCache[cacheIndex]);
                 simulationStateCache[cacheIndex] = GetSimulationState();
                 
@@ -275,6 +275,7 @@ public class ClientPrediction : NetworkBehaviour
                 float vertical = inputPackets[i].vertical;
                 int tick = inputPackets[i].currentTick;
                 //Debug.Log(tick);
+                moveCamera(inputPackets[i]);
                 simulateMovementTick(inputPackets[i]);
                 SimulationState tempState; //= GetSimulationState();
                 tempState.position = m_rigidBody.position;
