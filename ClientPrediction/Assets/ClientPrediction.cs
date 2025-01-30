@@ -12,6 +12,7 @@ public class ClientPrediction : NetworkBehaviour
 
     Dictionary<ulong,NetworkObjectReference> clientDict;
     Rigidbody m_rigidBody;
+    PhysicMaterial m_physicMaterial;
     [SerializeField] Camera cam;
     //bool skippedFrame;
     float skippedHorizontal;
@@ -24,6 +25,7 @@ public class ClientPrediction : NetworkBehaviour
     int lastReconciledTick;
     Vector3 velocity;
     Vector3 angularVelocity;
+    Vector3 originalCameraPosition;
     const int CacheSize = 1024;
     SimulationState[] simulationStateCache = new SimulationState[CacheSize];
     InputPacket[] inputPacketCache = new InputPacket[CacheSize];
@@ -32,17 +34,23 @@ public class ClientPrediction : NetworkBehaviour
     [SerializeField]SettingsConfig settingsConfig;
     MovementFunctions movementFunctions = new MovementFunctions();
     
+
     [Header ("Movement System Parameters")]
     [SerializeField] float walkSpeed;
     [SerializeField] float jumpHeight;
     [SerializeField] float gravityStrength;
-    [SerializeField] float maxWalkSpeed; 
+    [SerializeField] float maxWalkSpeed;
+    [SerializeField] float maxCrouchSpeed;
+    [SerializeField] float slideSpeedThreshold; 
+    [SerializeField] float slideFriction;
+    [SerializeField] float walkFriction;
     
 
     public struct InputPacket : INetworkSerializable{
         public sbyte horizontal;
         public sbyte vertical;
         public bool jump;
+        public bool crouch;
         public sbyte mouseHorizontal;
         public sbyte mouseVertical;
         public ushort currentTick;
@@ -51,6 +59,7 @@ public class ClientPrediction : NetworkBehaviour
             serializer.SerializeValue(ref horizontal);
             serializer.SerializeValue(ref vertical);
             serializer.SerializeValue(ref jump);
+            serializer.SerializeValue(ref crouch);
             serializer.SerializeValue(ref currentTick);
             serializer.SerializeValue(ref mouseHorizontal);
             serializer.SerializeValue(ref mouseVertical);
@@ -90,15 +99,25 @@ public class ClientPrediction : NetworkBehaviour
         if(IsOwner){
             Cursor.lockState = CursorLockMode.Locked;
             cam.transform.rotation = transform.rotation;
+            originalCameraPosition = cam.transform.localPosition;
+            Debug.Log(originalCameraPosition);
+            
         }
-      
+
+        
+
         movementFunctions.moveSpeed = walkSpeed;
         movementFunctions.jumpHeight = jumpHeight;
         movementFunctions.gravityStrength = gravityStrength;
         movementFunctions.maxWalkSpeed = maxWalkSpeed;
+        movementFunctions.maxCrouchSpeed = maxCrouchSpeed;
+        movementFunctions.slideFriction = slideFriction;
+        movementFunctions.walkFriction = walkFriction;
+        movementFunctions.slideSpeedThreshold = slideSpeedThreshold;
 
-    
+
         m_rigidBody = GetComponent<Rigidbody>();
+        m_physicMaterial = m_rigidBody.gameObject.GetComponent<Collider>().material;
         m_rigidBody.isKinematic = true;
         m_rigidBody.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
         serverTickRate = NetworkManager.Singleton.NetworkTickSystem.TickRate;
@@ -179,6 +198,7 @@ public class ClientPrediction : NetworkBehaviour
         InputPacket clientInputPacket = new InputPacket();
         clientInputPacket.horizontal = (sbyte)Input.GetAxisRaw("Horizontal");
         clientInputPacket.vertical = (sbyte)Input.GetAxisRaw("Vertical");
+        clientInputPacket.crouch = Input.GetKey(settingsConfig.crouch);
         clientInputPacket.jump = Input.GetKey(settingsConfig.jump);
         //clientInputPacket.mouseHorizontal = (sbyte)Input.GetAxisRaw("Mouse X");
         //clientInputPacket.mouseVertical = (sbyte) -Input.GetAxisRaw("Mouse Y");
@@ -205,8 +225,28 @@ public class ClientPrediction : NetworkBehaviour
         if(IsOwner){//we only need to apply vertical rotation since the horizontal is synced with the parent rigidbody
             Vector3 currentRotation = cam.transform.rotation.eulerAngles;
             currentRotation += new Vector3(mouseVertical,0,0);
+            float bottomEuler = settingsConfig.viewRange;
+            float topEuler = 360 - settingsConfig.viewRange;
+            float bottomThresh = Mathf.Abs(currentRotation.x - topEuler);
+            float topThresh = Mathf.Abs(currentRotation.x - bottomEuler);
+            if(currentRotation.x > bottomEuler && bottomThresh>topThresh){
+                currentRotation.x = bottomEuler;
+            }
+            else if(currentRotation.x < topEuler && topThresh>bottomThresh){
+                currentRotation.x = topEuler;
+            }
+            //currentRotation.x = Mathf.Clamp(currentRotation.x,-settingsConfig.viewRange,settingsConfig.viewRange);
+            //Debug.Log(currentRotation.x);
             cam.transform.rotation = Quaternion.Euler(currentRotation);
             //Debug.Log("Camera Movement on Tick: " + inputPacket.currentTick); 
+        }
+        if(movementFunctions.isCrounching && movementFunctions.isGrounded){
+            //Debug.Log("In is crouching");
+            cam.transform.localPosition = Vector3.Lerp(cam.transform.localPosition,originalCameraPosition-new Vector3(0,m_rigidBody.transform.localScale.y,0),0.1f);
+        }
+        else{
+            //Debug.Log("cam position: " + cam.transform.localPosition + " original cam position: " + originalCameraPosition);
+            cam.transform.localPosition = Vector3.Lerp(cam.transform.localPosition,originalCameraPosition,0.1f);
         }
         movementFunctions.rotatePlayer(m_rigidBody,mouseHorizontal,mouseVertical);
     }
@@ -214,6 +254,7 @@ public class ClientPrediction : NetworkBehaviour
         float horizontal = inputPacket.horizontal;
         float vertical = inputPacket.vertical;
         bool jump = inputPacket.jump;
+        bool crouch = inputPacket.crouch;
         
         Physics.simulationMode = SimulationMode.Script;
         m_rigidBody.isKinematic = false;
@@ -222,7 +263,11 @@ public class ClientPrediction : NetworkBehaviour
         //Debug.Log(velocity);
         m_rigidBody.velocity = velocity;
         m_rigidBody.angularVelocity = angularVelocity;
-        
+        movementFunctions.checkForGround(m_rigidBody);
+        //Debug.Log("Ground check: " +movementFunctions.isGrounded);
+        movementFunctions.slideBehaviour(m_rigidBody,m_physicMaterial,crouch);
+        Debug.Log("Sliding: " + movementFunctions.isSliding);
+        Debug.Log("Crouch Input" + crouch);
         movementFunctions.addJumpForce(m_rigidBody,jump,inputPacket.currentTick);  
         movementFunctions.addMovementForce(m_rigidBody,horizontal,vertical);  
         movementFunctions.checkHorizontalSpeed(m_rigidBody);
@@ -360,9 +405,9 @@ public class ClientPrediction : NetworkBehaviour
 
             int correctionTick = currentServerState.currentTick;
             lastReconciledTick = correctionTick;
-            for(int i = correctionTick;i<clientTick;i++){
+            for(int i = correctionTick;i<=clientTick;i++){
                 //get the cached inputs
-                int resimIndex = i%CacheSize;;
+                int resimIndex = i%CacheSize;
          
                 InputPacket resimulatedPacket = inputPacketCache[resimIndex];
                 simulationStateCache[resimIndex] = GetSimulationState();
@@ -374,7 +419,7 @@ public class ClientPrediction : NetworkBehaviour
         }
         
     }
-    private void OnCollisionEnter(Collision other) {
+    /*private void OnCollisionEnter(Collision other) {
         if(other.collider.gameObject.layer == LayerMask.NameToLayer("Ground")){
             movementFunctions.isGrounded = true;
         }
@@ -384,7 +429,7 @@ public class ClientPrediction : NetworkBehaviour
             movementFunctions.isGrounded = false;
             //Debug.Log("Collision Exit");
         }
-    }
+    }*/
     /*
     void OnConnectedClientCallback(ulong clientID){//need to finish to allow server to send the list of rigidbodies to the client
         Debug.Log("Connected Client");

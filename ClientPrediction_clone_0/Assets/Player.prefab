@@ -189,7 +189,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2550364649490321657}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 009ec4a8ab9f9d947b04c1afae81e3df, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -271,7 +271,11 @@ MonoBehaviour:
   walkSpeed: 100
   jumpHeight: 25
   gravityStrength: 1
-  maxWalkSpeed: 15
+  maxWalkSpeed: 12
+  maxCrouchSpeed: 5
+  slideSpeedThreshold: 6
+  slideFriction: 0.1
+  walkFriction: 1
 --- !u!114 &1286900187477227315
 MonoBehaviour:
   m_ObjectHideFlags: 0

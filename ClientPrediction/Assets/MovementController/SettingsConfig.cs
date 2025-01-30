@@ -12,6 +12,7 @@ public class SettingsConfig : ScriptableObject
     public KeyCode jump = KeyCode.Space;
     public KeyCode sprint = KeyCode.LeftShift;
     public KeyCode crouch = KeyCode.LeftControl;
+    public float viewRange = 60.0f;
     public float horiz_sens = 1f;
     public float vert_sens = 1f;
 }
