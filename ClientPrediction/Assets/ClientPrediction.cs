@@ -51,8 +51,8 @@ public class ClientPrediction : NetworkBehaviour
         public sbyte vertical;
         public bool jump;
         public bool crouch;
-        public sbyte mouseHorizontal;
-        public sbyte mouseVertical;
+        public float mouseHorizontal;
+        public float mouseVertical;
         public ushort currentTick;
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -145,8 +145,8 @@ public class ClientPrediction : NetworkBehaviour
                 timer -= minTimeBetweenTicks;
                 int cacheIndex = clientTick%CacheSize;
                 InputPacket tempInputPacket = GetCurrentInput();
-                tempInputPacket.mouseHorizontal = (sbyte)skippedHorizontal;
-                tempInputPacket.mouseVertical = (sbyte)skippedVertical;
+                tempInputPacket.mouseHorizontal = skippedHorizontal;
+                tempInputPacket.mouseVertical = skippedVertical;
                 //totalMousePerFrame += tempInputPacket.mouseHorizontal;
                 inputPacketCache[cacheIndex] = tempInputPacket;
                 //Debug.Log(inputPacketCache[cacheIndex].jump);
@@ -206,8 +206,8 @@ public class ClientPrediction : NetworkBehaviour
         return clientInputPacket;
     }
     void GetCurrentMouseInput(){
-        skippedHorizontal += Input.GetAxisRaw("Mouse X");
-        skippedVertical += -Input.GetAxisRaw("Mouse Y");
+        skippedHorizontal += Input.GetAxis("Mouse X");
+        skippedVertical += -Input.GetAxis("Mouse Y");
     }
     SimulationState GetSimulationState(){
         SimulationState simulationState = new SimulationState();
@@ -221,7 +221,8 @@ public class ClientPrediction : NetworkBehaviour
     void moveCamera(InputPacket inputPacket){
         float mouseHorizontal = inputPacket.mouseHorizontal;
         float mouseVertical = inputPacket.mouseVertical;
-        //Debug.Log("Mouse Horizontal: " + mouseHorizontal + " Mouse Vertical: " + mouseVertical + " tick: " + inputPacket.currentTick);
+        
+        Debug.Log("Mouse Horizontal: " + mouseHorizontal + " Mouse Vertical: " + mouseVertical + " tick: " + inputPacket.currentTick);
         if(IsOwner){//we only need to apply vertical rotation since the horizontal is synced with the parent rigidbody
             Vector3 currentRotation = cam.transform.rotation.eulerAngles;
             currentRotation += new Vector3(mouseVertical,0,0);
@@ -266,8 +267,8 @@ public class ClientPrediction : NetworkBehaviour
         movementFunctions.checkForGround(m_rigidBody);
         //Debug.Log("Ground check: " +movementFunctions.isGrounded);
         movementFunctions.slideBehaviour(m_rigidBody,m_physicMaterial,crouch);
-        Debug.Log("Sliding: " + movementFunctions.isSliding);
-        Debug.Log("Crouch Input" + crouch);
+        //Debug.Log("Sliding: " + movementFunctions.isSliding);
+        //Debug.Log("Crouch Input" + crouch);
         movementFunctions.addJumpForce(m_rigidBody,jump,inputPacket.currentTick);  
         movementFunctions.addMovementForce(m_rigidBody,horizontal,vertical);  
         movementFunctions.checkHorizontalSpeed(m_rigidBody);

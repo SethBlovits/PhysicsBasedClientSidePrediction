@@ -108,7 +108,8 @@ GameObject:
   - component: {fileID: 3615378087995979004}
   - component: {fileID: -5006288104693639799}
   - component: {fileID: 1286900187477227315}
-  - component: {fileID: -6095261524614133577}
+  - component: {fileID: -3208380490795848100}
+  - component: {fileID: -6996476790508543697}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -268,12 +269,12 @@ MonoBehaviour:
   moveSpeed: 7
   cam: {fileID: 3048815802059440343}
   settingsConfig: {fileID: 11400000, guid: f377e082d1bb5624681ddd314231c615, type: 2}
-  walkSpeed: 100
+  walkSpeed: 200
   jumpHeight: 25
   gravityStrength: 1
   maxWalkSpeed: 12
-  maxCrouchSpeed: 5
-  slideSpeedThreshold: 6
+  maxCrouchSpeed: 3
+  slideSpeedThreshold: 4
   slideFriction: 0.1
   walkFriction: 1
 --- !u!114 &1286900187477227315
@@ -288,16 +289,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 686d2ed26ae051d4eac8b48506225f0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-6095261524614133577
+--- !u!114 &-3208380490795848100
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2550364649490321657}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c44085057d7667845b91462d15a92573, type: 3}
+  m_Script: {fileID: 11500000, guid: 34445d5a90361ac4e93737ff01123f1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_camera: {fileID: 3048815802059440343}
+  cam: {fileID: 3048815802059440343}
+--- !u!114 &-6996476790508543697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2550364649490321657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8100af62c79d01140bcaeb547afc852d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

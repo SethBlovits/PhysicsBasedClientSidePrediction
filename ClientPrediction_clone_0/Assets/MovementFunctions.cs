@@ -28,9 +28,20 @@ namespace Movement{
             gravityStrength=1f;
         }
         public void addMovementForce(Rigidbody rigidbody,float horizontal, float vertical){
-            
             Vector3 movementVector = horizontal*rigidbody.transform.right+vertical*rigidbody.transform.forward;
-            rigidbody.AddForce(movementVector.normalized*moveSpeed*minTimeBetweenTicks,ForceMode.VelocityChange);
+            Vector3 aerialForce = movementVector.normalized*moveSpeed*minTimeBetweenTicks;
+            if(isGrounded && !isSliding){
+                rigidbody.AddForce(movementVector.normalized*moveSpeed*minTimeBetweenTicks,ForceMode.VelocityChange);
+            }
+            else{
+                rigidbody.AddForce(movementVector.normalized*moveSpeed/4f*minTimeBetweenTicks,ForceMode.VelocityChange);
+                Vector3 currentMovementVelocity = new Vector3(rigidbody.velocity.x,0,rigidbody.velocity.z);
+                if(currentMovementVelocity.magnitude > maxCrouchSpeed){
+                    currentMovementVelocity = Vector3.ClampMagnitude(currentMovementVelocity,maxWalkSpeed);
+                    rigidbody.velocity = Vector3.Lerp(rigidbody.velocity,new Vector3(currentMovementVelocity.x,rigidbody.velocity.y,currentMovementVelocity.z),0.7f);
+                }
+
+            }
         }
         public void rotatePlayer(Rigidbody rigidbody,float horizontal,float vertical){
             Vector3 currentAngle = rigidbody.transform.rotation.eulerAngles;
